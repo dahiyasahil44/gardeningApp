@@ -68,7 +68,7 @@ Go to "Reminders", select plant and date, save it.
 Grant permission when prompted and keep the app open.
 
 #Credentials
-Email - john@gmail.com
+Email - sahil@gmail.com
 Password - 123456
 
 #APIs Used
