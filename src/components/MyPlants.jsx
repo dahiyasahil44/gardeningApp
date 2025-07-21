@@ -1,7 +1,7 @@
 // src/pages/MyPlants.jsx
-import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { db } from '../services/firebase';
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { db } from "../services/firebase";
 import {
   collection,
   query,
@@ -11,23 +11,26 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-} from 'firebase/firestore';
+  updateDoc,
+} from "firebase/firestore";
 
 export default function MyPlants() {
+  const [selectedPlant, setSelectedPlant] = useState(null);
+
   const user = useSelector((state) => state.auth.user);
   const [plants, setPlants] = useState([]);
   const [newPlant, setNewPlant] = useState({
-    name: '',
-    type: '',
-    wateringFrequency: '',
-    sunlight: '',
-    notes: '',
-    image: '',
+    name: "",
+    type: "",
+    wateringFrequency: "",
+    sunlight: "",
+    notes: "",
+    image: "",
   });
 
   const fetchPlants = async () => {
     if (!user) return;
-    const q = query(collection(db, 'plants'), where('userId', '==', user.uid));
+    const q = query(collection(db, "plants"), where("userId", "==", user.uid));
     const snapshot = await getDocs(q);
     const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     setPlants(data);
@@ -38,26 +41,60 @@ export default function MyPlants() {
     const { name, type, wateringFrequency, sunlight } = newPlant;
     if (!name || !type || !wateringFrequency || !sunlight) return;
 
-    await addDoc(collection(db, 'plants'), {
-      ...newPlant,
-      userId: user.uid,
-      addedOn: serverTimestamp(),
-    });
+    if (selectedPlant) {
+      // Edit mode
+      const plantRef = doc(db, "plants", selectedPlant.id);
+      await updateDoc(plantRef, {
+        ...newPlant,
+      });
+      setSelectedPlant(null);
+    } else {
+      // Add mode
+      await addDoc(collection(db, "plants"), {
+        ...newPlant,
+        userId: user.uid,
+        addedOn: serverTimestamp(),
+      });
+    }
 
     setNewPlant({
-      name: '',
-      type: '',
-      wateringFrequency: '',
-      sunlight: '',
-      notes: '',
-      image: '',
+      name: "",
+      type: "",
+      wateringFrequency: "",
+      sunlight: "",
+      notes: "",
+      image: "",
     });
 
     fetchPlants();
   };
 
+  const handleEdit = (plant) => {
+    setSelectedPlant(plant);
+    setNewPlant({
+      name: plant.name,
+      type: plant.type,
+      wateringFrequency: plant.wateringFrequency,
+      sunlight: plant.sunlight,
+      notes: plant.notes || "",
+      image: plant.image || "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setSelectedPlant(null);
+    setNewPlant({
+      name: "",
+      type: "",
+      wateringFrequency: "",
+      sunlight: "",
+      notes: "",
+      image: "",
+    });
+  };
+
   const handleDelete = async (id) => {
-    await deleteDoc(doc(db, 'plants', id));
+    await deleteDoc(doc(db, "plants", id));
     fetchPlants();
   };
 
@@ -128,8 +165,17 @@ export default function MyPlants() {
           type="submit"
           className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
         >
-          Add Plant
+          {selectedPlant ? "Update Plant" : "Add Plant"}
         </button>
+        {selectedPlant && (
+          <button
+            type="button"
+            onClick={cancelEdit}
+            className="mx-2 px-6 py-2 border border-red-500 text-red-500 rounded hover:bg-red-100"
+          >
+            Cancel
+          </button>
+        )}
       </form>
 
       <div className="grid gap-4">
@@ -157,12 +203,20 @@ export default function MyPlants() {
                 )}
               </div>
             </div>
+            <div>
+            <button
+              onClick={() => handleEdit(plant)}
+              className="text-blue-500 hover:underline text-sm mr-4"
+            >
+              Edit
+            </button>
             <button
               onClick={() => handleDelete(plant.id)}
               className="text-red-500 hover:underline text-sm"
             >
               Delete
             </button>
+            </div>
           </div>
         ))}
       </div>

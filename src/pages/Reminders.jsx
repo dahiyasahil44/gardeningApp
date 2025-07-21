@@ -10,11 +10,13 @@ import {
   deleteDoc,
   doc,
   orderBy,
-  Timestamp
+  Timestamp,
+  updateDoc,
 } from 'firebase/firestore';
 
 export default function Reminders() {
   const user = useSelector(state => state.auth.user);
+  const [editingReminder, setEditingReminder] = useState(null);
   const [reminders, setReminders] = useState([]);
   const [form, setForm] = useState({
     plantName: '',
@@ -56,11 +58,22 @@ export default function Reminders() {
     sendNotificationIfDue(data); // <--- ADD THIS
   };
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    const { plantName, task, frequency, notes, nextDue } = form;
-    if (!plantName || !task || !frequency || !nextDue) return;
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  const { plantName, task, frequency, notes, nextDue } = form;
+  if (!plantName || !task || !frequency || !nextDue) return;
 
+  if (editingReminder) {
+    const reminderRef = doc(db, 'reminders', editingReminder.id);
+    await updateDoc(reminderRef, {
+      plantName,
+      task,
+      frequency,
+      notes,
+      nextDue: Timestamp.fromDate(new Date(nextDue)),
+    });
+    setEditingReminder(null);
+  } else {
     await addDoc(collection(db, 'reminders'), {
       userId: user.uid,
       plantName,
@@ -70,10 +83,28 @@ export default function Reminders() {
       nextDue: Timestamp.fromDate(new Date(nextDue)),
       createdAt: Timestamp.now()
     });
+  }
 
-    setForm({ plantName: '', task: '', frequency: '', notes: '', nextDue: '' });
-    fetchReminders();
-  };
+  setForm({ plantName: '', task: '', frequency: '', notes: '', nextDue: '' });
+  fetchReminders();
+};
+
+const handleEdit = (reminder) => {
+  setEditingReminder(reminder);
+  setForm({
+    plantName: reminder.plantName,
+    task: reminder.task,
+    frequency: reminder.frequency,
+    notes: reminder.notes || '',
+    nextDue: reminder.nextDue.toDate().toISOString().substring(0, 10),
+  });
+};
+
+const cancelEdit = () => {
+  setEditingReminder(null);
+  setForm({ plantName: '', task: '', frequency: '', notes: '', nextDue: '' });
+};
+
 
   const handleDelete = async (id) => {
     await deleteDoc(doc(db, 'reminders', id));
@@ -88,7 +119,7 @@ export default function Reminders() {
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-green-700 mb-4">⏰ Care Reminders</h1>
 
-      <form onSubmit={handleAdd} className="bg-white p-4 rounded shadow space-y-3 mb-8">
+      <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow space-y-3 mb-8">
         <input
           type="text"
           placeholder="Plant Name"
@@ -123,8 +154,17 @@ export default function Reminders() {
           className="w-full border p-2 rounded"
         />
         <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-          Add Reminder
+          {editingReminder ? 'Update Reminder' : 'Add Reminder'}
         </button>
+        {editingReminder && (
+    <button
+      type="button"
+      onClick={cancelEdit}
+      className="mx-1 bg-red-600 text-white px-4 py-2 rounded hover:bg-green-700"
+    >
+      Cancel
+    </button>
+  )}
       </form>
 
       <div className="space-y-4">
@@ -137,9 +177,14 @@ export default function Reminders() {
               </p>
               {reminder.notes && <p className="text-sm mt-1 italic">{reminder.notes}</p>}
             </div>
-            <button onClick={() => handleDelete(reminder.id)} className="text-red-500 hover:underline">
-              Delete
-            </button>
+            <div className="flex flex-col gap-2 text-sm">
+  <button onClick={() => handleEdit(reminder)} className="text-blue-500 hover:underline">
+    Edit
+  </button>
+  <button onClick={() => handleDelete(reminder.id)} className="text-red-500 hover:underline">
+    Delete
+  </button>
+</div>
           </div>
         ))}
         {reminders.length === 0 && <p className="text-gray-500">No reminders yet.</p>}

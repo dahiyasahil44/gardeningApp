@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from '../redux/authSlice';
 
 export default function Login() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: 'sahil@gmail.com', password: '123456' });
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, user } = useSelector(state => state.auth);

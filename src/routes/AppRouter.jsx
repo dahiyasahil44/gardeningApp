@@ -12,6 +12,10 @@ import Blog from '../components/Blog';
 import BlogDetail from '../components/BlogDetail';
 import MyPlants from '../components/MyPlants';
 import Reminders from '../pages/Reminders';
+import GardenJournal from '../components/GardenJournal';
+import PlantLookup from '../components/PlantLookup';
+import GrowthStats from '../components/GrowthStats';
+import Settings from '../pages/Settings';
 
 const AppRouter = () => (
  
@@ -28,6 +32,10 @@ const AppRouter = () => (
       <Route path="/blogs/:id" element={<BlogDetail />} />
       <Route path="/my-plants" element={<MyPlants />} />
       <Route path="/reminders" element={<Reminders />} />
+      <Route path="/journal" element={<GardenJournal />} />
+      <Route path="/plant-guide" element={<PlantLookup />} />
+      <Route path="/stats" element={<GrowthStats />} />
+      <Route path="/settings" element={<Settings />} />
     </Routes>
 );
 
